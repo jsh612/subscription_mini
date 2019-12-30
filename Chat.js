@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,7 +7,7 @@ import {
   KeyboardAvoidingView
 } from "react-native";
 import gql from "graphql-tag";
-import { useQuery, useMutation } from "react-apollo-hooks";
+import { useQuery, useMutation, useSubscription } from "react-apollo-hooks";
 import withSuspense from "./withSuspense";
 
 const GET_MESSAGE = gql`
@@ -28,32 +28,56 @@ const SEND_MESSAGE = gql`
   }
 `;
 
+const NEW_MESSAGE = gql`
+  subscription newMessage {
+    newMessage {
+      id
+      text
+    }
+  }
+`;
+
 const Chat = () => {
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(""); // 작성된 메시지를 mutation 할때 사용
   const [sendMessagesMutation] = useMutation(SEND_MESSAGE, {
     variables: {
       text: message
     }
   });
 
-  const { data, error } = useQuery(GET_MESSAGE, { suspend: true });
+  const {
+    data: { messages: oldMessages },
+    error
+  } = useQuery(GET_MESSAGE, { suspend: true });
+
+  const [messages, setMessages] = useState(oldMessages || []); //subscription시 사용
+
+  const { data } = useSubscription(NEW_MESSAGE);
+
+  const handleNewMessage = () => {
+    if (data !== undefined) {
+      const { newMessage } = data;
+      setMessages(pre => [...pre, newMessage]);
+    }
+  };
 
   const onChangeText = text => setMessage(text);
 
   const onSubmit = async () => {
-    console.log("ok");
     if (message === "") {
-      console.log(1);
       return;
     }
     try {
-      console.log(2);
       await sendMessagesMutation();
       setMessage("");
     } catch (error) {
       console.log(error);
     }
   };
+
+  useEffect(() => {
+    handleNewMessage();
+  }, [data]);
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} enabled behavior="padding">
@@ -65,7 +89,7 @@ const Chat = () => {
           alignItems: "center"
         }}
       >
-        {data.messages.map(m => (
+        {messages.map(m => (
           <View key={m.id} style={{ marginBottom: 10 }}>
             <Text>{m.text}</Text>
           </View>
