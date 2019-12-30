@@ -1,19 +1,22 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { Suspense } from "react";
+import { StyleSheet, Text, View, ActivityIndicator } from "react-native";
+import { ApolloProvider } from "react-apollo-hooks";
+import client from "./apollo";
+import Chat from "./Chat";
 
 export default function App() {
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-    </View>
+    <ApolloProvider client={client}>
+      <Chat />
+    </ApolloProvider>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center"
+  }
 });
